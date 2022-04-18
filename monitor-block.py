@@ -27,7 +27,7 @@ class Exercises:
         self.apikey_ETH = apikey_ETH
         self.apikey_AVAX = apikey_AVAX
         self.eth_dingding_token = ""  # 可不填
-    
+
     def call(self):
         url = "https://uni.apistd.com/?action=sms.voice.verification.send&accessKeyId={}".format(
             accessKeyId)
@@ -37,7 +37,7 @@ class Exercises:
 
         response = requests.request("POST", url, headers=headers, data=payload)
 
-        logger.info("success to call.")
+        logger.info("打电话!!")
         logger.info(response.text)
 
     def stampTransformTime(self, timestamp):
@@ -74,40 +74,58 @@ class Exercises:
         elif type_api == self.apikey_AVAX:
             url = self.BASE_URL_AVAX
         try:
-            res = requests.get(url, params)
+            res = requests.get(url, params, timeout=20)
+            logger.info('成功请求')
             return res.json()
         except Exception as e:
             if str(e).find("443") != -1:  # 网络错误不用报错
                 return 443
 
     # ---- API接口封装  ------
-    def get_recent_tx(self, address, rotate_count=0):
+    def get_recent_tx(
+        self,
+        address,
+        start,
+        rotate_count=0,
+    ):
         '''获取最新交易信息'''
-        apikey_list = [
-            self.apikey_ETH, self.apikey_BSC, self.apikey_FTM,
-            self.apikey_MATIC, self.apikey_AVAX
-        ]
+        apikey_list = [self.apikey_FTM]
         for item in apikey_list:
-            res = self._get_txlist_api(2, address, item)
-            if res == 443 and rotate_count < 10:  # 网络问题并且20次都访问都是443则报错停止运行
-                rotate_count += 1
-                time.sleep(2)
-                self.get_recent_tx(address, rotate_count)
+            try:
+                res = self._get_txlist_api(2, address, item)
+                if not res:
+                    continue
+                if res == 443 and rotate_count < 10:  # 网络问题并且20次都访问都是443则报错停止运行
+                    rotate_count += 1
+                    time.sleep(2)
+                    self.get_recent_tx(address, True, rotate_count)
 
-            elif 'status' in res and res['status'] == '1' and len(
-                    res['result']) > 1:
+                elif 'status' in res and res['status'] == '1' and len(
+                        res['result']) > 1:
+                    first_mes = res['result'][0]
+                    # second_mes = res['result'][1]
+                    logger.info('正常监控中...block number:{}'.format(
+                        first_mes['blockNumber']))
 
-                first_mes = res['result'][0]
-                second_mes = res['result'][1]
-                if first_mes['blockNumber'] not in funcdata.get_block_list(
-                        item) and time.time() - float(
-                            first_mes['timeStamp']) < 3600 and float(
-                                first_mes['timeStamp']) - float(
-                                    second_mes['timeStamp']) > 300:
-                    self.call()
-                    logger.info('有新交易了')
-                    funcdata.modify_block_list(str(first_mes['blockNumber']),
-                                               item)
+                    if first_mes['blockNumber'] not in funcdata.get_block_list(
+                            item) and start:
+                        logger.info('有新交易了...block number:{}'.format(
+                            first_mes['blockNumber']))
+                        self.call()
+                        time.sleep(1200)
+                        funcdata.modify_block_list(
+                            str(first_mes['blockNumber']), item)
+
+                    if first_mes['blockNumber'] not in funcdata.get_block_list(
+                            item) and not start:
+                        logger.info('该交易为初始化...block number:{}'.format(
+                            first_mes['blockNumber']))
+                        funcdata.modify_block_list(
+                            str(first_mes['blockNumber']), item)
+
+            except Exception as e:
+                logger.exception(e)
+
 
 def init_logger():
     log_dir = os.path.dirname(os.path.realpath(__file__))
@@ -119,10 +137,17 @@ def init_logger():
                retention='10 days')
     logger.info("Logging initialized.")
 
+
 if __name__ == "__main__":
     init_logger()
+    logger.info('start')
     ins = Exercises()
+    start = False
     while (True):
-        for key in oxdata:
-            ins.get_recent_tx(key)
-            time.sleep(1)
+        try:
+            for key in oxdata:
+                ins.get_recent_tx(key, start)
+                time.sleep(1)
+            start = True
+        except Exception as e:
+            logger.exception(e)
