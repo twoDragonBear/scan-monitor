@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import datetime
 
 import requests
 from loguru import logger
@@ -9,11 +10,17 @@ from FuncData import FuncData
 from perpar_data import (oxdata, apikey_BSC, apikey_ETH, apikey_FTM,
                          accessKeyId, apikey_AVAX, apikey_MATIC, phone_number)
 
+# 范围时间
+
+
+
+
 funcdata = FuncData()
 
 
 class Exercises:
     '''基于各大scan的api开发的监控地址预警系统'''
+
     def __init__(self):
         self.BASE_URL_BSC = "https://api.bscscan.com/api"
         self.BASE_URL_ETH = "https://api.etherscan.io/api"
@@ -75,7 +82,6 @@ class Exercises:
             url = self.BASE_URL_AVAX
         try:
             res = requests.get(url, params, timeout=20)
-            logger.info('成功请求')
             return res.json()
         except Exception as e:
             if str(e).find("443") != -1:  # 网络错误不用报错
@@ -111,8 +117,16 @@ class Exercises:
                             item) and start:
                         logger.info('有新交易了...block number:{}'.format(
                             first_mes['blockNumber']))
-                        self.call()
-                        time.sleep(1200)
+                        d_time = datetime.datetime.strptime(
+                            str(datetime.datetime.now().date()) + '00:00', '%Y-%m-%d%H:%M')
+                        d_time1 = datetime.datetime.strptime(
+                            str(datetime.datetime.now().date()) + '09:00', '%Y-%m-%d%H:%M')
+                        n_time = datetime.datetime.now()
+                        logger.info('准备打电话')
+                        if n_time > d_time and n_time < d_time1:
+                            logger.info('打电话')
+                            self.call()
+                            time.sleep(1200)
                         funcdata.modify_block_list(
                             str(first_mes['blockNumber']), item)
 
@@ -130,7 +144,7 @@ class Exercises:
 def init_logger():
     log_dir = os.path.dirname(os.path.realpath(__file__))
     logger.info(log_dir)
-    logger.add("%s/log/%s" % (log_dir, 'netcontroller.log'),
+    logger.add("%s/log/%s" % (log_dir, 'monitor.log'),
                rotation='16MB',
                encoding='utf-8',
                enqueue=True,
