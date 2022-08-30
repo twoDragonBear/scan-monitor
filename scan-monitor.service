@@ -1,0 +1,9 @@
+[Unit]
+Description=Chain monitor
+
+[Service]
+ExecStart=/root/scan-monitor/start.sh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
