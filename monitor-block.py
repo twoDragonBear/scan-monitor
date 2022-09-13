@@ -10,13 +10,7 @@ from FuncData import FuncData
 from perpar_data import (oxdata, apikey_BSC, apikey_ETH, apikey_FTM,
                          accessKeyId, apikey_AVAX, apikey_MATIC, phone_number)
 
-# 范围时间
-
-
-
-
 funcdata = FuncData()
-
 
 class Exercises:
     '''基于各大scan的api开发的监控地址预警系统'''
@@ -35,11 +29,11 @@ class Exercises:
         self.apikey_AVAX = apikey_AVAX
         self.eth_dingding_token = ""  # 可不填
 
-    def call(self):
+    def call(self, phone):
         url = "https://uni.apistd.com/?action=sms.voice.verification.send&accessKeyId={}".format(
             accessKeyId)
 
-        payload = json.dumps({"to": phone_number, "code": "5201"})
+        payload = json.dumps({"to": phone, "code": "5201"})
         headers = {'Content-Type': 'application/json'}
 
         response = requests.request("POST", url, headers=headers, data=payload)
@@ -117,6 +111,7 @@ class Exercises:
                             item) and start:
                         logger.info('有新交易了...block number:{}'.format(
                             first_mes['blockNumber']))
+                        # 范围时间
                         d_time = datetime.datetime.strptime(
                             str(datetime.datetime.now().date()) + '00:00', '%Y-%m-%d%H:%M')
                         d_time1 = datetime.datetime.strptime(
@@ -125,7 +120,8 @@ class Exercises:
                         logger.info('准备打电话')
                         if n_time > d_time and n_time < d_time1:
                             logger.info('打电话')
-                            self.call()
+                            for phone in phone_number:
+                                self.call(phone)
                             time.sleep(1200)
                         funcdata.modify_block_list(
                             str(first_mes['blockNumber']), item)
