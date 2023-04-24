@@ -6,7 +6,9 @@ apikey_MATIC = ""             #必填
 apikey_BSC = ""               #必填
 apikey_ETH = ""               #必填
 apikey_AVAX = ""              #必填
-phone_number = ""             #电话号码
+apikey_ARBITRUM = ""
+apikey_OPTIMISM = ""
+phone_number = [""]             #电话号码
 accessKeyId = ""              #uni-sms accesskey
 
 # 填写需要监控的地址

@@ -7,7 +7,7 @@ import requests
 from loguru import logger
 
 from FuncData import FuncData
-from perpar_data import (oxdata, apikey_BSC, apikey_ETH, apikey_FTM,
+from perpar_data import (oxdata, apikey_BSC, apikey_ETH, apikey_FTM, apikey_ARBITRUM, apikey_OPTIMISM,
                          accessKeyId, apikey_AVAX, apikey_MATIC, phone_number)
 
 funcdata = FuncData()
@@ -17,16 +17,20 @@ class Exercises:
 
     def __init__(self):
         self.BASE_URL_BSC = "https://api.bscscan.com/api"
-        self.BASE_URL_ETH = "https://api.etherscan.io/api"
+        self.BASE_URL_ETH = "https://api.etherscan.com/api"
         self.BASE_URL_FTM = "https://api.ftmscan.com/api"
         self.BASE_URL_MATIC = "https://api.polygonscan.com/api"
         self.BASE_URL_AVAX = "https://api.snowtrace.io/api"
+        self.BASE_URL_ARBITRUM = "https://api.arbiscan.io/api"
+        self.BASE_URL_OPTIMISM = "https://api-optimistic.etherscan.io/api"
         self.apikey_FTM = apikey_FTM
         self.apikey_MATIC = apikey_MATIC
         self.wei = 1000000000000000000
         self.apikey_BSC = apikey_BSC
         self.apikey_ETH = apikey_ETH
         self.apikey_AVAX = apikey_AVAX
+        self.apikey_ARBITRUM = apikey_ARBITRUM
+        self.apikey_OPTIMISM = apikey_OPTIMISM
         self.eth_dingding_token = ""  # 可不填
 
     def call(self, phone):
@@ -74,10 +78,16 @@ class Exercises:
             url = self.BASE_URL_MATIC
         elif type_api == self.apikey_AVAX:
             url = self.BASE_URL_AVAX
+        elif type_api == self.apikey_ARBITRUM:
+            url = self.BASE_URL_ARBITRUM
+        elif type_api == self.apikey_OPTIMISM:
+            url = self.BASE_URL_OPTIMISM
         try:
-            res = requests.get(url, params, timeout=20)
+            headers = {}
+            res = requests.get(url, params,headers=headers,timeout=20)
             return res.json()
         except Exception as e:
+            logger.info(e)
             if str(e).find("443") != -1:  # 网络错误不用报错
                 return 443
 
@@ -86,13 +96,13 @@ class Exercises:
         self,
         address,
         start,
+        apikey_list,
         rotate_count=0,
     ):
         '''获取最新交易信息'''
-        apikey_list = [self.apikey_FTM]
         for item in apikey_list:
             try:
-                res = self._get_txlist_api(2, address, item)
+                res = self._get_txlist_api(3, address, item)
                 if not res:
                     continue
                 if res == 443 and rotate_count < 10:  # 网络问题并且20次都访问都是443则报错停止运行
@@ -115,14 +125,14 @@ class Exercises:
                         d_time = datetime.datetime.strptime(
                             str(datetime.datetime.now().date()) + '00:00', '%Y-%m-%d%H:%M')
                         d_time1 = datetime.datetime.strptime(
-                            str(datetime.datetime.now().date()) + '09:00', '%Y-%m-%d%H:%M')
+                            str(datetime.datetime.now().date()) + '23:59', '%Y-%m-%d%H:%M')
                         n_time = datetime.datetime.now()
                         logger.info('准备打电话')
                         if n_time > d_time and n_time < d_time1:
                             logger.info('打电话')
                             for phone in phone_number:
                                 self.call(phone)
-                            time.sleep(1200)
+                            time.sleep(120)
                         funcdata.modify_block_list(
                             str(first_mes['blockNumber']), item)
 
@@ -155,9 +165,8 @@ if __name__ == "__main__":
     start = False
     while (True):
         try:
-            for key in oxdata:
-                ins.get_recent_tx(key, start)
-                time.sleep(1)
+            for key,value in oxdata.items():
+                ins.get_recent_tx(key, start, value)
             start = True
         except Exception as e:
             logger.exception(e)

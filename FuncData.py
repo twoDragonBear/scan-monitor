@@ -1,7 +1,7 @@
 import os
 import json
 
-from perpar_data import (apikey_BSC, apikey_ETH, apikey_FTM, apikey_AVAX,
+from perpar_data import (apikey_BSC, apikey_ETH, apikey_FTM, apikey_AVAX,apikey_ARBITRUM,apikey_OPTIMISM,
                          apikey_MATIC)
 
 data_path = os.getcwd()+ "/storage_data.json"
@@ -41,6 +41,10 @@ class FuncData:
             return data_json["block_list_matic"]
         elif type == apikey_FTM:
             return data_json["block_list_ftm"]
+        elif type == apikey_ARBITRUM:
+            return data_json["block_list_arb"]
+        elif type == apikey_OPTIMISM:
+            return data_json["block_list_op"] 
 
 
 
@@ -61,6 +65,10 @@ class FuncData:
             data_json['block_list_eth'].append(block_number)
         elif type == apikey_AVAX:
             data_json['block_list_avax'].append(block_number)
+        elif type == apikey_ARBITRUM:
+            data_json['block_list_arb'].append(block_number)
+        elif type == apikey_OPTIMISM:
+            data_json['block_list_op'].append(block_number)
 
         self._modify_json_data(data_json)
 
